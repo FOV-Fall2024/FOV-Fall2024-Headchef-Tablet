@@ -33,11 +33,11 @@ class SignalRService {
     _hubConnection.onreconnecting(({error}) {
       print("Reconnecting: \$error");
       _reconnectingController.add(true);
-      autoReconnect();
     });
 
     _hubConnection.onreconnected(({connectionId}) {
       print("Reconnected: \$connectionId");
+      autoReconnect();
       _reconnectingController.add(false);
     });
 
@@ -51,13 +51,17 @@ class SignalRService {
   }
 
   Future<void> autoReconnect() async {
-    final authRepository = AuthRepository();
-    String? employeeId = await authRepository.getEmployeeId();
-    String? role = await authRepository.getRole();
-    List<String?> employeeInfo = [employeeId, role];
-    await _hubConnection.invoke("SendEmployeeId", args: [employeeInfo]);
+  final authRepository = AuthRepository();
+  String? employeeId = await authRepository.getEmployeeId();
+  String? role = await authRepository.getRole();
+
+  if (employeeId == null || role == null) {
+    print("Error: Employee ID or role is null during auto-reconnect");
+    return;
   }
 
+  await _hubConnection.invoke("SendEmployeeId", args: [employeeId, role]);
+}
   void _handleNewOrder(List<Object?>? args) {
     if (args != null && args.isNotEmpty) {
       final headChefId = args[0].toString();
